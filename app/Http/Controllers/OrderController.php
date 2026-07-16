@@ -32,13 +32,22 @@ class OrderController extends Controller
         $productId = $request->input('product_id');
         $quantity = $request->input('quantity');
 
+        // 1. Recuperar los datos del usuario directamente de la petición (Middleware)
+        $userId    = $request->attributes->get('user_id');
+        $userName  = $request->attributes->get('user_name');
+        $userEmail = $request->attributes->get('user_email');
+
+        if (!$userId) {
+            return response()->json(['error' => 'No se pudo identificar al usuario de la peticion'], 401);
+        }
+
         // Llamada HTTP interna hacia el microservicio de productos
         // En producción, reemplaza localhost por el nombre del servicio o dominio interno
         // $response = Http::get("http://localhost:8001/api/products/{$productId}");
 
         $url = env('PRODUCT_SERVICE_URL', 'http://app-productos:80') . "/api/products/{$productId}";
         $response = Http::get($url);
-        
+
         if ($response->failed()) {
             return response()->json(['error' => 'El producto no existe o el servicio no responde'], 400);
         }
@@ -72,11 +81,20 @@ class OrderController extends Controller
 
             DB::commit();
 
+            // --- LLAMADA AL MICROSERVICIO DE EMAIL ---
+            Http::post(env('EMAIL_SERVICE_URL', 'http://app-email:80') . '/api/email/order', [
+                'order_id' => $order->id,
+                'user_name' => $userName,
+                'user_email' => $userEmail,
+                'product_name' => $product['name'],
+                'quantity' => $quantity,
+                'total_price' => $totalPrice
+            ]);
+
             return response()->json([
                 'message' => 'Pedido registrado con éxito',
                 'order' => $order
             ], 201);
-
         } catch (Exception $e) {
             DB::rollBack();
 

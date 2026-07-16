@@ -73,23 +73,39 @@ class OrderController extends Controller
         try {
             $totalPrice = $product['price'] * $quantity;
 
-            $order = Order::create([
+            // $order = Order::create([
+            //     'product_id' => $productId,
+            //     'quantity' => $quantity,
+            //     'total_price' => $totalPrice,
+            // ]);
+
+            $order = new Order([
                 'product_id' => $productId,
                 'quantity' => $quantity,
                 'total_price' => $totalPrice,
             ]);
 
+            // Adjuntamos datos temporales al objeto (No se guardan en la DB de pedidos, solo viven en memoria)
+            $order->temp_user_name    = $userName;
+            $order->temp_user_email   = $userEmail;
+            $order->temp_product_name = $product['name'];
+
+            //Al guardar, Laravel ejecuta la inserción y gatilla el evento 'created' automáticamente
+            $order->save();
+
             DB::commit();
 
             // --- LLAMADA AL MICROSERVICIO DE EMAIL ---
-            Http::post(env('EMAIL_SERVICE_URL', 'http://app-email:80') . '/api/email/order', [
-                'order_id' => $order->id,
-                'user_name' => $userName,
-                'user_email' => $userEmail,
-                'product_name' => $product['name'],
-                'quantity' => $quantity,
-                'total_price' => $totalPrice
-            ]);
+            // Http::post(env('EMAIL_SERVICE_URL', 'http://app-email:80') . '/api/email/order', [
+            //     'order_id' => $order->id,
+            //     'user_name' => $userName,
+            //     'user_email' => $userEmail,
+            //     'product_name' => $product['name'],
+            //     'quantity' => $quantity,
+            //     'total_price' => $totalPrice
+            // ]);
+
+            // event(new \App\Events\OrderCreated($order, $userName, $userEmail, $product['name']));
 
             return response()->json([
                 'message' => 'Pedido registrado con éxito',

@@ -4,39 +4,46 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Exception;
 
 class JwtMiddleware
 {
-    public function handle(Request $request, Closure $next, ...$roles): Response
+    /**
+     * Intercepta la peticion y valida el token JWT de forma limpia
+     */
+    public function handle(Request $request, Closure $next, ...$roles)
     {
         $authHeader = $request->header('Authorization');
 
-        if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            return response()->json(['error' => 'Token no proveído o mal formado'], 401);
+        if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
+            return response()->json(['error' => 'Token no proveido o mal formado'], 401);
         }
 
-        $jwt = $matches[1];
+        // Extraemos el string puro del token de forma segura
+        $parts = explode(' ', $authHeader);
+        $jwt = isset($parts[1]) ? $parts[1] : null;
+
+        if (!$jwt) {
+            return response()->json(['error' => 'Token invalido'], 401);
+        }
 
         try {
-            // Validación matemática local sin consultar bases de datos externas
+            // Validacion matematica local usando la clave secreta compartida
             $decoded = JWT::decode($jwt, new Key(env('JWT_SECRET'), 'HS256'));
+            
+            // Inyeccion limpia utilizando la API nativa de Symfony/Laravel
+            $request->attributes->set('user_id', $decoded->sub);
+            $request->attributes->set('user_role', $decoded->role);
+            $request->attributes->set('user_name', $decoded->name);
+            $request->attributes->set('user_email', $decoded->email);
 
-            // Inyectar los datos del usuario en la petición para usarlo en los controladores si es necesario
-            $request->attributes->add([
-                'user_id' => $decoded->sub,
-                'user_role' => $decoded->role,
-                'user_name' => $decoded->name,  // <-- Capturado matemáticamente del token
-                'user_email' => $decoded->email // <-- Capturado matemáticamente del token
-            ]);
-
-            // AUTORIZACIÓN: Validar si el rol del usuario está permitido para esta ruta
+            // Validacion de autorizacion por roles
             if (!empty($roles) && !in_array($decoded->role, $roles)) {
                 return response()->json(['error' => 'No tienes permisos para acceder a este recurso'], 403);
             }
+
         } catch (Exception $e) {
             return response()->json(['error' => 'Token invalido o expirado'], 401);
         }

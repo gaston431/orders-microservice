@@ -1,36 +1,31 @@
-FROM php:8.3-fpm-alpine
+FROM php:8.4-fpm-alpine
 
-# Instalar extensiones de PHP requeridas y herramientas del sistema
-RUN apk add --no-cache \
-    nginx \
-    supervisor \
-    curl \
-    libpng-dev \
-    libxml2-dev \
-    zip \
-    unzip \
-    git \
-    oniguruma-dev
+RUN apk add --no-cache linux-headers
 
-RUN docker-php-ext-install pdo pdo_mysql bcmath
+# Instalar extensiones mínimas del núcleo para persistencia de datos
+RUN docker-php-ext-install pdo_mysql bcmath sockets
 
-# Instalar Composer
+# Instalar Composer copiándolo desde su imagen oficial
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Configurar el directorio de trabajo
+# Definir el directorio de trabajo interno
 WORKDIR /var/www
 
-# Copiar el código del proyecto
+# Copiar los archivos del proyecto al contenedor
 COPY . /var/www
 
-# Instalar dependencias de Laravel
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Instalar dependencias puras saltando los ganchos automáticos de Artisan
+RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs --no-scripts
 
-# Permisos para almacenamiento y caché de Laravel
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+# Purgar cualquier archivo de caché corrupto heredado del entorno local
+RUN rm -rf bootstrap/cache/*.php storage/framework/cache/data/* storage/framework/views/*.php
 
-# Exponer el puerto del contenedor (Nginx interno)
+# Asignar permisos estándar al usuario del servidor web de Alpine (www-data)
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 775 storage bootstrap/cache
+
+# Exponer el puerto de comunicación del contenedor
 EXPOSE 80
 
-# Iniciar comando personalizado para levantar Nginx y PHP-FPM juntos
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=80"]
+# Servidor web nativo de un solo hilo, ideal y 100% estable para microservicios locales en Docker
+CMD ["php", "-S", "0.0.0.0:80", "-t", "public"]

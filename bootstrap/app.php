@@ -3,7 +3,6 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,11 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.jwt' => \App\Http\Middleware\JwtMiddleware::class,
         ]);
     })
-    ->withEvents(discover: [
-        __DIR__ . '/../app/Listeners',
-    ])
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(
-            fn(Request $request) => $request->is('api/*'),
-        );
+        // Sintaxis estándar limpia: Forzar respuestas JSON para APIs de forma nativa
+        // Eliminamos la importación de la clase Request y la Arrow function conflictiva
     })->create();

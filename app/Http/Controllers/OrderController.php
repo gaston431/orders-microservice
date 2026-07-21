@@ -24,6 +24,7 @@ class OrderController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        // Validación estándar de los datos de entrada
         $request->validate([
             'product_id' => 'required|integer',
             'quantity' => 'required|integer|min:1',
@@ -32,11 +33,13 @@ class OrderController extends Controller
         $productId = $request->input('product_id');
         $quantity = $request->input('quantity');
 
-        // 1. Recuperar los datos del usuario directamente de la petición (Middleware)
+        // CONEXIÓN MODERNA Y CORRECTA PARA EVITAR ERRORES DE SINTAXIS:
+        // Extraemos los datos del contenedor de atributos de Symfony/Laravel sin usar métodos deprecados
         $userId    = $request->attributes->get('user_id');
         $userName  = $request->attributes->get('user_name');
         $userEmail = $request->attributes->get('user_email');
 
+        // Validación de seguridad para confirmar que el JWT inyectó los datos
         if (!$userId) {
             return response()->json(['error' => 'No se pudo identificar al usuario de la peticion'], 401);
         }

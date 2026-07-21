@@ -3,35 +3,21 @@
 namespace App\Listeners;
 
 use App\Events\OrderCreated;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Http;
+use App\Jobs\SendOrderEmailJob;
 
-class SendEmailNotification implements ShouldQueue
+class SendEmailNotification
 {
-    /**
-     * Create the event listener.
-     */
-    public function __construct()
-    {
-        //
-    }
-
-    /**
-     * Handle the event.
-     */
     public function handle(OrderCreated $event): void
     {
-        $emailServiceUrl = env('EMAIL_SERVICE_URL', 'http://app-email:80');
-
-        // La llamada HTTP pesada se ejecuta aquí en segundo plano
-        Http::post($emailServiceUrl . '/api/email/order', [
-            'order_id' => $event->order->id,
-            'user_name' => $event->userName,
-            'user_email' => $event->userEmail,
+        SendOrderEmailJob::dispatch([
+            'order_id'     => $event->order->id,
+            'user_name'    => $event->userName,
+            'user_email'   => $event->userEmail,
             'product_name' => $event->productName,
-            'quantity' => $event->order->quantity,
-            'total_price' => $event->order->total_price
-        ]);
+            'quantity'     => $event->order->quantity,
+            'total_price'  => $event->order->total_price,
+        ])
+            ->onConnection('rabbitmq')
+            ->onQueue('orders_queue');
     }
 }

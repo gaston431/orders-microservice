@@ -48,8 +48,12 @@ class OrderController extends Controller
         // En producción, reemplaza localhost por el nombre del servicio o dominio interno
         // $response = Http::get("http://localhost:8001/api/products/{$productId}");
 
+        $authHeader = $request->header('Authorization');
+        $parts = explode(' ', $authHeader);
+        $jwt = isset($parts[1]) ? $parts[1] : null;
+
         $url = env('PRODUCT_SERVICE_URL', 'http://app-productos:80') . "/api/products/{$productId}";
-        $response = Http::get($url);
+        $response = Http::withToken($jwt)->get($url);
 
         if ($response->failed()) {
             return response()->json(['error' => 'El producto no existe o el servicio no responde'], 400);
@@ -63,7 +67,7 @@ class OrderController extends Controller
         }
 
         // Actualizar stock de producto
-        $updateResponse = Http::put(
+        $updateResponse = Http::withToken($jwt)->put(
             $url,
             ['stock' => $product['stock'] - $quantity]
         );
@@ -119,7 +123,7 @@ class OrderController extends Controller
 
             // --- ACCIÓN DE COMPENSACIÓN ---
             // Si la base de datos local falló, le devolvemos el stock original a Productos
-            Http::put($url, ['stock' => $product['stock']]);
+            Http::withToken($jwt)->put($url, ['stock' => $product['stock']]);
 
             return response()->json([
                 'error' => 'Fallo interno al registrar el pedido. Operación revertida.',

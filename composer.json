@@ -11,8 +11,6 @@
         "laravel/framework": "^13.8",
         "laravel/sanctum": "^4.0",
         "predis/predis": "^3.5",
-        "symfony/http-foundation": "7.4.*",
-        "symfony/var-dumper": "7.4.*",
         "vladimir-yuldashev/laravel-queue-rabbitmq": "^15.0"
     },
     "require-dev": {

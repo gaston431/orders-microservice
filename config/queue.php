@@ -4,6 +4,9 @@ return [
 
     'default' => env('QUEUE_CONNECTION', 'sync'),
 
+    // Nueva clave: define qué conexión usa el flujo de eventos de pedidos
+    'order_events_connection' => env('ORDER_EVENTS_CONNECTION', 'rabbitmq'),
+
     'connections' => [
 
         'sync' => [
@@ -36,6 +39,14 @@ return [
                     'ssl_on' => env('RABBITMQ_SSL', false),
                 ],
             ],
+        ],
+
+        'redis' => [
+            'driver' => 'redis',
+            'connection' => 'default',
+            'queue' => env('REDIS_QUEUE', 'orders_queue'),
+            'retry_after' => 90,
+            'block_for' => null,
         ],
 
     ],

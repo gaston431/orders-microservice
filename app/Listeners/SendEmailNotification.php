@@ -17,7 +17,7 @@ class SendEmailNotification
             'quantity'     => $event->order->quantity,
             'total_price'  => $event->order->total_price,
         ])
-            ->onConnection('rabbitmq')
+            ->onConnection(config('queue.order_events_connection'))
             ->onQueue('orders_queue');
     }
 }

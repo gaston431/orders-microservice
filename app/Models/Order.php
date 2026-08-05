@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use App\Events\OrderCreated;
-use Illuminate\Database\Eloquent\Model;
+// use Illuminate\Database\Eloquent\Model;
+use MongoDB\Laravel\Eloquent\Model;
 
 class Order extends Model
 {
+    protected $connection = 'mongodb';
+    protected $collection = 'orders';
     protected $fillable = ['product_id','quantity','total_price'];
 
     // --- PROPIEDADES CONTEXTUALES PARA EL EVENTO (NO VAN A LA BASE DE DATOS) ---

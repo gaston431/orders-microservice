@@ -26,7 +26,8 @@ class OrderController extends Controller
     {
         // Validación estándar de los datos de entrada
         $request->validate([
-            'product_id' => 'required|integer',
+            // 'product_id' => 'required|integer',
+            'product_id' => 'required|string|regex:/^[0-9a-fA-F]{24}$/', // ID válido de MongoDB
             'quantity' => 'required|integer|min:1',
         ]);
 
@@ -76,7 +77,7 @@ class OrderController extends Controller
             return response()->json(['error' => 'No se pudo actualizar el stock del producto'], 500);
         }
 
-        DB::beginTransaction();
+        // DB::beginTransaction();
         try {
             $totalPrice = $product['price'] * $quantity;
 
@@ -100,7 +101,7 @@ class OrderController extends Controller
             //Al guardar, Laravel ejecuta la inserción y gatilla el evento 'created' automáticamente
             $order->save();
 
-            DB::commit();
+            // DB::commit();
 
             // --- LLAMADA AL MICROSERVICIO DE EMAIL ---
             // Http::post(env('EMAIL_SERVICE_URL', 'http://app-email:80') . '/api/email/order', [
@@ -119,7 +120,7 @@ class OrderController extends Controller
                 'order' => $order
             ], 201);
         } catch (Exception $e) {
-            DB::rollBack();
+            // DB::rollBack();
 
             // --- ACCIÓN DE COMPENSACIÓN ---
             // Si la base de datos local falló, le devolvemos el stock original a Productos

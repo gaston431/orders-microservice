@@ -93,6 +93,8 @@ class OrderController extends Controller
                 'total_price' => $totalPrice,
             ]);
 
+            // throw new Exception("Ocurrió un error forzado");
+
             // Adjuntamos datos temporales al objeto (No se guardan en la DB de pedidos, solo viven en memoria)
             $order->temp_user_name    = $userName;
             $order->temp_user_email   = $userEmail;
@@ -124,7 +126,9 @@ class OrderController extends Controller
 
             // --- ACCIÓN DE COMPENSACIÓN ---
             // Si la base de datos local falló, le devolvemos el stock original a Productos
-            Http::withToken($jwt)->put($url, ['stock' => $product['stock']]);
+            // Http::withToken($jwt)->put($url, ['stock' => $product['stock']]);
+
+            event(new \App\Events\OrderFailed($productId, $quantity));
 
             return response()->json([
                 'error' => 'Fallo interno al registrar el pedido. Operación revertida.',
